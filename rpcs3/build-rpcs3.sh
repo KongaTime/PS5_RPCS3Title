@@ -12,8 +12,9 @@
 # What the options say, for now (milestone 1: compile RPCS3 unchanged and list
 # what the console lacks):
 #   - the SDK's own CMake toolchain, Zen 2 code (-march=znver2), frame pointers;
-#   - no C++20 module scanning: RPCS3 has no modules, and CMake's scan wants a
-#     clang-scan-deps it cannot find, which fails every C++ configure check;
+#   - C++20 module scanning (OpenAL Soft uses modules) through
+#     rpcs3/clang-scan-deps-ps5, which gives the scanner the flags the SDK's
+#     compiler wrapper adds; without a scanner every C++ configure check fails;
 #   - no Qt frontend, no LLVM, no LTO, no SDL, FAudio, libevdev, ALSA, PulseAudio,
 #     GameMode or Discord: the console has none of them, or they come later;
 #   - FFmpeg built for the console (rpcs3/build-ffmpeg.sh), in place of
@@ -49,6 +50,9 @@ fi
 clang_major=$("$sdk/bin/prospero-llvm-config" --version | cut -d. -f1)
 (( clang_major >= 19 )) || {
     echo "error: RPCS3 needs clang 19 or later; the SDK found $clang_major (set LLVM_CONFIG)" >&2; exit 1; }
+[[ -x "$("$sdk/bin/prospero-llvm-config" --bindir)/clang-scan-deps" ]] || {
+    echo "error: no clang-scan-deps beside the SDK's clang" >&2; exit 1; }
+scan_deps=$root/rpcs3/clang-scan-deps-ps5
 
 configure=false
 targets=()
@@ -76,7 +80,7 @@ if $configure || [[ ! -f $build/build.ninja ]]; then
     cmake -S "$src" -B "$build" -G Ninja \
         -DCMAKE_TOOLCHAIN_FILE="$sdk/toolchain/prospero.cmake" \
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=OFF \
-        -DCMAKE_CXX_SCAN_FOR_MODULES=OFF \
+        -DCMAKE_CXX_COMPILER_CLANG_SCAN_DEPS="$scan_deps" \
         -DCMAKE_C_FLAGS="$flags" -DCMAKE_CXX_FLAGS="$flags" \
         -DUSE_NATIVE_INSTRUCTIONS=OFF -DWITH_LLVM=OFF -DUSE_LTO=OFF \
         -DUSE_FAUDIO=OFF -DUSE_LIBEVDEV=OFF -DUSE_SDL=OFF -DUSE_ALSA=OFF -DUSE_PULSE=OFF \

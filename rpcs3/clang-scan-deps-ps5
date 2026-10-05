@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# RPCS3 for the PS5 - clang-scan-deps for C++20 modules, seeing what the
+# console's compiler sees.
+#
+# CMake scans module sources by running clang-scan-deps on the compile command,
+# here `prospero-clang++ ...`. The scanner reads that command as a clang driver
+# would and never runs the wrapper, so it misses the target, sysroot and libc++
+# headers the wrapper adds, and fails on <atomic>. This puts them back: the
+# compiler after `--` becomes the SDK's clang++ with the wrapper's own flags
+# (the payload SDK's bin/prospero-clang++), in the wrapper's order.
+#
+# Copyright (C) 2026 KongaTime
+# SPDX-License-Identifier: MIT
+
+set -euo pipefail
+
+PS5_PAYLOAD_SDK=${PS5_PAYLOAD_SDK:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/.deps/native/ps5-payload-sdk}
+bindir=$("$PS5_PAYLOAD_SDK/bin/prospero-llvm-config" --bindir)
+
+args=()
+while (( $# )); do
+    args+=("$1")
+    if [[ $1 == -- ]]; then
+        shift
+        [[ ${1##*/} == prospero-clang++ ]] || { args+=("$@"); break; }
+        shift
+        args+=("$bindir/clang++"
+               -target x86_64-sie-ps5
+               -fvisibility-nodllstorageclass=default
+               -isysroot "$PS5_PAYLOAD_SDK"
+               -stdlib++-isystem "$PS5_PAYLOAD_SDK/target/include/c++/v1"
+               -fno-stack-protector -fno-plt -femulated-tls
+               -fdenormal-fp-math=ieee -frtti -fexceptions
+               "$@"
+               --sysroot "$PS5_PAYLOAD_SDK")
+        break
+    fi
+    shift
+done
+exec "$bindir/clang-scan-deps" "${args[@]}"
