@@ -6,9 +6,10 @@ emulator; the fork adds what the console needs (`__PROSPERO__` and `PS5` in its 
 and CMake), and its frontend for the console is in `rpcs3/ps5/` there.
 
 **Not working yet.** It builds into a packaged title (`dist/PPSA99200/`, a 60 MB
-`eboot.bin`) that starts on the console: on my PS5 (PS5_RPCS3 cdca878) RPCS3
-initialised the emulator, reported "PS3 system software: missing" (none installed),
-and stopped cleanly. It plays nothing yet: no game has been booted, nothing is drawn.
+`eboot.bin`) that starts on the console: on my PS5 RPCS3 initialised the emulator
+and stopped cleanly (PS5_RPCS3 0138ef4), and installed Sony's PS3 system software
+4.93 from `PS3UPDAT.PUP`, 23 packages in 7.5 s (8a47032). It plays nothing yet: no
+PS3 code has run, nothing is drawn.
 What is proven, and what is not, is in the commit messages of both repositories.
 
 **Licence.** RPCS3 is GPL-2.0-only and the PS5 platform layer it links is
@@ -57,6 +58,11 @@ compiles with (the newest `llvm-config` it finds), or the link stops on a missin
 `libclang_rt.builtins-x86_64.a`.
 
 ## Running
+
+The PS3 system software first: put Sony's `PS3UPDAT.PUP` (the PS3 update from
+PlayStation's own site) in the title's folder, `/data/homebrew/PPSA99200/`, and launch:
+RPCS3 installs it into `rpcs3/dev_flash/`, once. Then, with nothing named to boot,
+a launch boots the PS3's home menu, on the interpreters (no LLVM yet).
 
 `/app0/rpcs3-boot.txt` (the title's folder on the console) names what to boot, on its
 first line: an ELF, or a game's folder. Without it RPCS3 starts, reports in klog whether
