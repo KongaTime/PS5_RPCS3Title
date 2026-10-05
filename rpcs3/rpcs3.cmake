@@ -13,6 +13,8 @@ target_sources(samples PRIVATE ${ROOT}/rpcs3/title_main.cpp)
 # stb_image's code comes once, from RPCS3 (rpcs3/Emu/stb_image.cpp, v2.30);
 # the foundation's glTF loader uses it instead of its own (v2.21)
 target_compile_definitions(samples PRIVATE PS5_STB_IMAGE_ELSEWHERE)
+# The launch runs ps5_title_main in place of the samples (ps5/src/main.cpp)
+target_compile_definitions(samples PRIVATE PS5_TITLE_MAIN)
 
 set(rpcs3_build ${ROOT}/build/rpcs3)
 if(NOT EXISTS ${rpcs3_build}/rpcs3/ps5/librpcs3_ps5.a)

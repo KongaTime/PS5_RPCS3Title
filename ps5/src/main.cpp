@@ -45,8 +45,12 @@ extern "C" VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(Vk
 #endif
 
 /* PS5_RPCS3Title: a title whose program is not a Vulkan sample defines this
- * (rpcs3/title_main.cpp: RPCS3), and a launch runs it in place of the samples. */
-extern "C" int ps5_title_main(void) __attribute__((weak));
+ * (rpcs3/title_main.cpp: RPCS3) and PS5_TITLE_MAIN, and a launch runs it in
+ * place of the samples. Not a weak symbol: a weak reference nothing defines
+ * becomes an import, which the native tool refuses. */
+#if defined(PS5_TITLE_MAIN)
+extern "C" int ps5_title_main(void);
+#endif
 
 namespace {
 
@@ -392,9 +396,12 @@ int main()
 
 	int status = 0;
 	TestRun run;
-	if (ps5_title_main) {
+#if defined(PS5_TITLE_MAIN)
+	if (true) {
 		status = ps5_title_main();
-	} else if (readTestRun(run)) {
+	} else
+#endif
+	if (readTestRun(run)) {
 		status = runTests(run);
 	} else if (ps5SampleCount == 1) {
 		// A title with one program: no menu, and the title ends with the program
