@@ -44,6 +44,10 @@ extern "C" VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(Vk
 #define PS5_APP_ROOT "/app0"
 #endif
 
+/* PS5_RPCS3Title: a title whose program is not a Vulkan sample defines this
+ * (rpcs3/title_main.cpp: RPCS3), and a launch runs it in place of the samples. */
+extern "C" int ps5_title_main(void) __attribute__((weak));
+
 namespace {
 
 const char *const testRunPath = PS5_APP_ROOT "/test-run.txt";
@@ -388,7 +392,9 @@ int main()
 
 	int status = 0;
 	TestRun run;
-	if (readTestRun(run)) {
+	if (ps5_title_main) {
+		status = ps5_title_main();
+	} else if (readTestRun(run)) {
 		status = runTests(run);
 	} else if (ps5SampleCount == 1) {
 		// A title with one program: no menu, and the title ends with the program

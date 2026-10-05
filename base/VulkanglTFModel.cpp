@@ -14,7 +14,10 @@
  */
 
 #define TINYGLTF_IMPLEMENTATION
+// PS5: a title that links stb_image's code elsewhere (PS5_RPCS3Title: RPCS3's) sets PS5_STB_IMAGE_ELSEWHERE
+#if !defined(PS5_STB_IMAGE_ELSEWHERE)
 #define STB_IMAGE_IMPLEMENTATION
+#endif
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 
 #include "VulkanglTFModel.h"

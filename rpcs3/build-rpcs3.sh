@@ -20,7 +20,8 @@
 #   - FFmpeg built for the console (rpcs3/build-ffmpeg.sh), in place of
 #     upstream's prebuilt archives;
 #   - Vulkan from the foundation's headers (external/vulkan) and a placeholder
-#     library: the title links RADV itself, with PS5_Vulkan's recipe.
+#     library: the title links RADV itself, with PS5_Vulkan's recipe, and
+#     RPCS3 reaches it through the foundation's volk (ps5/third_party/volk);
 #
 # RPCS3 needs clang 19 or later; the SDK takes the newest llvm-config it finds
 # (or LLVM_CONFIG).
@@ -89,6 +90,7 @@ if $configure || [[ ! -f $build/build.ninja ]]; then
         -DUSE_SYSTEM_ZLIB=OFF -DUSE_SYSTEM_CURL=OFF -DUSE_SYSTEM_OPENAL=OFF \
         -DUSE_SYSTEM_OPENCV=OFF -DUSE_SYSTEM_SDL=OFF \
         -DPS5_FFMPEG_DIR="$root/.deps/native/ffmpeg-ps5" \
+        -DPS5_VOLK_DIR="$root/ps5/third_party/volk" \
         -DUSE_VULKAN=ON -DVulkan_INCLUDE_DIR="$root/external" \
         -DVulkan_LIBRARY="$build/libvulkan-placeholder.a" \
         >"$build/configure.log" 2>&1 || {
