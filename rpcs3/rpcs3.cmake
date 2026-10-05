@@ -34,10 +34,13 @@ set(iconv_archive ${ROOT}/.deps/native/libiconv-ps5/lib/libiconv.a)
 # as ps5_<name> (ps5platform/libc.h) and PS5_Vulkan's recipe does not bind yet:
 # asmjit's getpagesizes, Abseil's syscall, RPCS3's times and statfs, wolfSSL's
 # accept4, miniupnpc's if_nametoindex, if_indextoname, getnameinfo and
-# gai_strerror, FFmpeg's isatty, libc++'s pathconf (std::filesystem; SDK fork 220b1be)
+# gai_strerror, FFmpeg's isatty, libc++'s pathconf (std::filesystem; SDK fork 220b1be),
+# and in6addr_any (RPCS3's networking): the SDK's libSceNet stub defines it, but
+# the module gives a title no such export, and the shell refused to start the
+# title that imported it ("can't start the game or app")
 set(rpcs3_libc_bindings)
 foreach(name getpagesizes syscall times statfs accept4 if_nametoindex if_indextoname
-		getnameinfo gai_strerror isatty pathconf)
+		getnameinfo gai_strerror isatty pathconf in6addr_any)
 	list(APPEND rpcs3_libc_bindings --defsym=${name}=ps5_${name})
 endforeach()
 
