@@ -5,7 +5,8 @@ fork [PS5_RPCS3](https://github.com/KongaTime/PS5_RPCS3). RPCS3's developers mak
 emulator; the fork adds what the console needs (`__PROSPERO__` and `PS5` in its sources
 and CMake), and its frontend for the console is in `rpcs3/ps5/` there.
 
-**Not working yet.** It compiles and links for the console; it has not run on one.
+**Not working yet.** It builds into a packaged title (`dist/PPSA99200/`, a 60 MB
+`eboot.bin`); it has not run on a console.
 What is proven, and what is not, is in the commit messages of both repositories.
 
 **Licence.** RPCS3 is GPL-2.0-only and the PS5 platform layer it links is
@@ -35,13 +36,17 @@ touch pad's click is SELECT; the PS button stays the console's.
 
 ## Building
 
-With the stack beside this repository (`ps5/tools/bootstrap.sh`), and PS5_RPCS3 cloned
-as `../PS5_RPCS3` with its submodules (LLVM's and OpenCV's are not needed yet):
+With the stack beside this repository (`ps5/tools/bootstrap.sh`), with
+`../PS5_PayloadSDK` my fork ([KongaTime/PS5_PayloadSDK](https://github.com/KongaTime/PS5_PayloadSDK):
+the SDK pin, `220b1be`, adds `pathconf`), and PS5_RPCS3 cloned as `../PS5_RPCS3` with
+its submodules (LLVM's and OpenCV's are not needed yet):
 
 ```bash
 rpcs3/build-rpcs3.sh rpcs3_ps5 Fusion     # FFmpeg and libiconv first, then RPCS3
 PS5_CLANG=clang-20 ps5/tools/build.sh     # the title, linked with RPCS3, in dist/PPSA99200/
 ```
+
+Then copy `dist/PPSA99200/` to the console's `/data/homebrew/` (`ps5/tools/deploy.sh`).
 
 `PS5_CLANG` names the clang whose compiler-rt the link takes: the same version the SDK
 compiles with (the newest `llvm-config` it finds), or the link stops on a missing

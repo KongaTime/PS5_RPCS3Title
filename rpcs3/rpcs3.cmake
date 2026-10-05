@@ -32,14 +32,46 @@ set(iconv_archive ${ROOT}/.deps/native/libiconv-ps5/lib/libiconv.a)
 # as ps5_<name> (ps5platform/libc.h) and PS5_Vulkan's recipe does not bind yet:
 # asmjit's getpagesizes, Abseil's syscall, RPCS3's times and statfs, wolfSSL's
 # accept4, miniupnpc's if_nametoindex, if_indextoname, getnameinfo and
-# gai_strerror, FFmpeg's isatty
+# gai_strerror, FFmpeg's isatty, libc++'s pathconf (std::filesystem; SDK fork 220b1be)
 set(rpcs3_libc_bindings)
 foreach(name getpagesizes syscall times statfs accept4 if_nametoindex if_indextoname
-		getnameinfo gai_strerror isatty)
+		getnameinfo gai_strerror isatty pathconf)
 	list(APPEND rpcs3_libc_bindings --defsym=${name}=ps5_${name})
 endforeach()
 
-set(PS5_TITLE_LINK_INPUTS --start-group ${rpcs3_archives} ${ffmpeg_archives} ${iconv_archive} --end-group ${rpcs3_libc_bindings})
+# Weak references nothing defines: a PIE imports them, and the native tool
+# refuses an import no SDK stub exports. Each is optional, and its callers test
+# its address first (if (&f) f()), so it is defined here as address 0, absolute
+# and inside the program: RPCS3's thread_local variables' init functions
+# (_ZTH*: other units reference them weakly; constant initialisers never define
+# them), zstd's tracing hooks and gcov's. lld 20 has no -z nodynamic-undefined-weak.
+# A new one names itself in the native tool's error ("no public SDK stub exports").
+set(rpcs3_weak_undefined)
+foreach(name
+		_ZTH16g_tls_log_prefix _ZTH17g_tls_log_control _ZTH20g_tls_serialize_name
+		_ZTHN10cpu_thread17g_tls_this_threadE _ZTHN10id_manager4g_idE
+		_ZTHN11thread_ctrl17g_tls_this_threadE _ZTHN2fs11g_tls_errorE _ZTHN2vm12g_tls_lockedE
+		_ZTHN7lv2_obj11g_to_notifyE _ZTHN7lv2_obj25g_postpone_notify_barrierE
+		ZSTD_trace_compress_begin ZSTD_trace_compress_end
+		ZSTD_trace_decompress_begin ZSTD_trace_decompress_end
+		__gcov_dump __gcov_flush)
+	list(APPEND rpcs3_weak_undefined --defsym=${name}=0)
+endforeach()
+
+# A bound name the SDK's stubs also define (isatty, statfs, pathconf...) would be
+# exported from the title to override theirs, and the native tool refuses a
+# title's exports: every name bound here stays local, as PS5_Vulkan's recipe
+# keeps its own (tools/radv-link.sh)
+set(rpcs3_local_map ${CMAKE_BINARY_DIR}/rpcs3-local.map)
+set(rpcs3_local_names)
+foreach(flag ${rpcs3_libc_bindings} ${rpcs3_weak_undefined})
+	string(REGEX REPLACE "^--defsym=([^=]+)=.*$" "\\1" name "${flag}")
+	string(APPEND rpcs3_local_names "        ${name};\n")
+endforeach()
+file(WRITE ${rpcs3_local_map} "{\n    local:\n${rpcs3_local_names}};\n")
+
+set(PS5_TITLE_LINK_INPUTS --start-group ${rpcs3_archives} ${ffmpeg_archives} ${iconv_archive} --end-group
+	${rpcs3_libc_bindings} ${rpcs3_weak_undefined} --version-script ${rpcs3_local_map})
 set(PS5_TITLE_LINK_DEPENDS ${rpcs3_archives})
 list(LENGTH rpcs3_archives rpcs3_archive_count)
 message(STATUS "RPCS3: linking ${rpcs3_archive_count} archives from ${rpcs3_build}")
