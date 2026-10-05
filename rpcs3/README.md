@@ -6,7 +6,9 @@ emulator; the fork adds what the console needs (`__PROSPERO__` and `PS5` in its 
 and CMake), and its frontend for the console is in `rpcs3/ps5/` there.
 
 **Not working yet.** It builds into a packaged title (`dist/PPSA99200/`, a 60 MB
-`eboot.bin`); it has not run on a console.
+`eboot.bin`) that starts on the console: on my PS5 (PS5_RPCS3 cdca878) RPCS3
+initialised the emulator, reported "PS3 system software: missing" (none installed),
+and stopped cleanly. It plays nothing yet: no game has been booted, nothing is drawn.
 What is proven, and what is not, is in the commit messages of both repositories.
 
 **Licence.** RPCS3 is GPL-2.0-only and the PS5 platform layer it links is
@@ -28,8 +30,10 @@ are or will be provided: install the PS3 system software from Sony's own
 | `rpcs3/title_main.cpp` | here | the program: reads the controllers, starts RPCS3 |
 
 RPCS3's Vulkan calls go through the foundation's volk to the RADV the title links. Its
-files live in `/app0/rpcs3/` (the configuration, `dev_hdd0`, the caches, `RPCS3.log`);
-its warnings and errors reach klog.
+files live in `/app0/rpcs3/` (the configuration, `dev_hdd0`), its caches and log in
+`/app0/rpcs3/cache/` (`RPCS3.log`). Its warnings and errors reach klog, and each step
+of the start, with those warnings and errors, goes to `/app0/rpcs3-trace.txt`, which
+FTP can read without klog.
 
 The controllers: players 1 to 4 are the console's controllers. OPTIONS is START, the
 touch pad's click is SELECT; the PS button stays the console's.
