@@ -8,6 +8,10 @@
  * title's pad API (poll_pads, below), and ends a fatal error through this
  * title's catchReturnFromMain.
  *
+ * Each step of the start, and RPCS3's warnings and errors, go to
+ * /app0/rpcs3-trace.txt as they happen (written through at once, so a crash
+ * keeps them), readable over FTP without klog.
+ *
  * What it boots: the first line of /app0/rpcs3-boot.txt (an ELF, or a game's
  * folder), if there is one; else RPCS3 starts, reports the PS3 system software
  * it finds, and stops.
@@ -18,8 +22,12 @@
 
 #include "platform.h"
 
+#include <sys/stat.h>
+
 #include <cstdint>
+#include <cstdio>
 #include <fstream>
+#include <mutex>
 #include <string>
 
 /* The fork's interface (rpcs3/ps5/ps5_frontend.h), as it declares it */
@@ -38,6 +46,7 @@ enum : uint32_t {
 constexpr int rpcs3_ps5_pad_players = 4;
 struct rpcs3_ps5_title {
 	void (*poll_pads)(rpcs3_ps5_pad pads[rpcs3_ps5_pad_players]);
+	void (*trace)(const char *line);
 };
 int rpcs3_ps5_run(const char *boot_path, const rpcs3_ps5_title &title);
 
@@ -86,19 +95,40 @@ void pollPads(rpcs3_ps5_pad pads[rpcs3_ps5_pad_players])
 	}
 }
 
+/* /app0/rpcs3-trace.txt, written through line by line; RPCS3 calls it from any thread */
+const char *const tracePath = "/app0/rpcs3-trace.txt";
+std::mutex traceLock;
+
+void trace(const char *line)
+{
+	std::lock_guard lock(traceLock);
+	if (FILE *file = fopen(tracePath, "a")) {
+		fprintf(file, "%9.3f %s\n", now_seconds(), line);
+		fclose(file);
+	}
+	say("RPCS3: %s", line);
+}
+
 } // namespace
 
 extern "C" int ps5_title_main(void)
 {
+	/* Kept from a fatal error before main (RPCS3's static initialisers), if any */
+	if (FILE *file = fopen(tracePath, "a")) {
+		fprintf(file, "---- launch\n");
+		fclose(file);
+		chmod(tracePath, 0666);
+	}
+	trace("title: start");
 	std::string boot;
 	if (std::ifstream file{"/app0/rpcs3-boot.txt"}) {
 		std::getline(file, boot);
 		while (!boot.empty() && (boot.back() == '\r' || boot.back() == ' '))
 			boot.pop_back();
 	}
-	say("RPCS3: %s", boot.empty() ? "starting without a game" : boot.c_str());
-	const rpcs3_ps5_title title{ pollPads };
+	trace(boot.empty() ? "title: starting RPCS3 without a game" : ("title: booting " + boot).c_str());
+	const rpcs3_ps5_title title{ pollPads, trace };
 	const int status = rpcs3_ps5_run(boot.c_str(), title);
-	say("RPCS3: stopped, status %d", status);
+	trace(("title: RPCS3 stopped, status " + std::to_string(status)).c_str());
 	return status;
 }
