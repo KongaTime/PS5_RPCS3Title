@@ -3,7 +3,7 @@
 # The entry (rpcs3/title_main.cpp) joins the title's objects. The link takes
 # RPCS3's PS5 frontend, its emulator core and every library they were built
 # with: the archives rpcs3/build-rpcs3.sh left in build/rpcs3/ (built first),
-# and the console's FFmpeg (rpcs3/build-ffmpeg.sh), as one group, since they
+# the console's FFmpeg and libiconv (rpcs3/build-ffmpeg.sh, build-libiconv.sh), as one group, since they
 # refer to each other in every direction.
 #
 # Copyright (C) 2026 KongaTime
@@ -25,17 +25,21 @@ file(GLOB_RECURSE rpcs3_archives CONFIGURE_DEPENDS ${rpcs3_build}/*.a)
 # and FFmpeg is the console's (below), never upstream's Linux prebuilts
 list(FILTER rpcs3_archives EXCLUDE REGEX "/libvulkan-placeholder\\.a$|/CMakeFiles/|/3rdparty/zlib/zlib/libz\\.a$|/3rdparty/ffmpeg/")
 file(GLOB ffmpeg_archives CONFIGURE_DEPENDS ${ROOT}/.deps/native/ffmpeg-ps5/lib/*.a)
+# GNU libiconv (rpcs3/build-libiconv.sh): cellL10n's text encodings
+set(iconv_archive ${ROOT}/.deps/native/libiconv-ps5/lib/libiconv.a)
 
 # libc functions the console lacks, which the platform layer this title pins has
 # as ps5_<name> (ps5platform/libc.h) and PS5_Vulkan's recipe does not bind yet:
-# asmjit's getpagesizes, Abseil's syscall, RPCS3's times, wolfSSL's accept4,
-# miniupnpc's if_nametoindex and if_indextoname
+# asmjit's getpagesizes, Abseil's syscall, RPCS3's times and statfs, wolfSSL's
+# accept4, miniupnpc's if_nametoindex, if_indextoname, getnameinfo and
+# gai_strerror, FFmpeg's isatty
 set(rpcs3_libc_bindings)
-foreach(name getpagesizes syscall times accept4 if_nametoindex if_indextoname)
+foreach(name getpagesizes syscall times statfs accept4 if_nametoindex if_indextoname
+		getnameinfo gai_strerror isatty)
 	list(APPEND rpcs3_libc_bindings --defsym=${name}=ps5_${name})
 endforeach()
 
-set(PS5_TITLE_LINK_INPUTS --start-group ${rpcs3_archives} ${ffmpeg_archives} --end-group ${rpcs3_libc_bindings})
+set(PS5_TITLE_LINK_INPUTS --start-group ${rpcs3_archives} ${ffmpeg_archives} ${iconv_archive} --end-group ${rpcs3_libc_bindings})
 set(PS5_TITLE_LINK_DEPENDS ${rpcs3_archives})
 list(LENGTH rpcs3_archives rpcs3_archive_count)
 message(STATUS "RPCS3: linking ${rpcs3_archive_count} archives from ${rpcs3_build}")

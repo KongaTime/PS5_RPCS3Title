@@ -6,6 +6,11 @@ A PS5 homebrew title (`PPSA99200`) on RADV, made from the
 (the launch, the pad, klog, test runs, the build and the console tools), and one
 program, `examples/rpcs3/rpcs3.cpp`, grown from the starter sample.
 
+**The title runs RPCS3, the PlayStation 3 emulator, in place of that program**: see
+[`rpcs3/README.md`](rpcs3/README.md) for how it is built, what works and what does not,
+and why its builds are for your own console only. The sections below are the
+foundation's, about the starter program it still carries.
+
 ## Building and running
 
 It builds against my PS5 stack, checked out beside it: PS5_Vulkan (the RADV release

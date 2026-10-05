@@ -18,7 +18,8 @@
 #   - no Qt frontend, no LLVM, no LTO, no SDL, FAudio, libevdev, ALSA, PulseAudio,
 #     GameMode or Discord: the console has none of them, or they come later;
 #   - FFmpeg built for the console (rpcs3/build-ffmpeg.sh), in place of
-#     upstream's prebuilt archives;
+#     upstream's prebuilt archives, and GNU libiconv (rpcs3/build-libiconv.sh):
+#     the console's libc has no iconv;
 #   - Vulkan from the foundation's headers (external/vulkan) and a placeholder
 #     library: the title links RADV itself, with PS5_Vulkan's recipe, and
 #     RPCS3 reaches it through the foundation's volk (ps5/third_party/volk);
@@ -67,6 +68,7 @@ done
 (( ${#targets[@]} )) || targets=(rpcs3_emu)
 
 "$root/rpcs3/build-ffmpeg.sh"
+"$root/rpcs3/build-libiconv.sh"
 
 mkdir -p "$build"
 if $configure || [[ ! -f $build/build.ninja ]]; then
@@ -91,6 +93,7 @@ if $configure || [[ ! -f $build/build.ninja ]]; then
         -DUSE_SYSTEM_OPENCV=OFF -DUSE_SYSTEM_SDL=OFF \
         -DPS5_FFMPEG_DIR="$root/.deps/native/ffmpeg-ps5" \
         -DPS5_VOLK_DIR="$root/ps5/third_party/volk" \
+        -DPS5_ICONV_DIR="$root/.deps/native/libiconv-ps5" \
         -DUSE_VULKAN=ON -DVulkan_INCLUDE_DIR="$root/external" \
         -DVulkan_LIBRARY="$build/libvulkan-placeholder.a" \
         >"$build/configure.log" 2>&1 || {
