@@ -1,0 +1,20 @@
+diff --git a/llvm/lib/Support/Unix/DynamicLibrary.inc b/llvm/lib/Support/Unix/DynamicLibrary.inc
+index b6f8e38a66..5687b2840e 100644
+--- a/llvm/lib/Support/Unix/DynamicLibrary.inc
++++ b/llvm/lib/Support/Unix/DynamicLibrary.inc
+@@ -53,6 +53,15 @@ void *DynamicLibrary::HandleSet::DLSym(void *Handle, const char *Symbol) {
+ DynamicLibrary::HandleSet::~HandleSet() {}
+ 
+ void *DynamicLibrary::HandleSet::DLOpen(const char *File, std::string *Err) {
++#if defined(__PROSPERO__)
++  // PS5: a title loads no libraries, but EngineBuilder::create asks for the
++  // process itself (a null File) and gives up without it. The process is a
++  // handle with no symbols behind it: the JIT's own resolver (RPCS3's memory
++  // manager) answers every symbol.
++  static char Process;
++  if (!File)
++    return &Process;
++#endif
+   if (Err)
+     *Err = "dlopen() not supported on this platform";
+   return &Invalid;

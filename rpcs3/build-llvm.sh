@@ -53,8 +53,11 @@ done
 
 rebuild=false
 [[ ${1:-} == --rebuild ]] && rebuild=true
+# What the build is: the commit, this script and the patches. A change to the
+# last two configures and builds again, incrementally
 revision=$(git -C "$llvm/.." rev-parse HEAD)
-if ! $rebuild && [[ -f $prefix/.revision && $(cat "$prefix/.revision") == "$revision" ]]; then
+stamp="$revision $(cat "$0" "$root"/rpcs3/llvm-patches/*.patch 2>/dev/null | sha256sum | cut -c1-16)"
+if ! $rebuild && [[ -f $prefix/.revision && $(cat "$prefix/.revision") == "$stamp" ]]; then
     echo "==> [llvm] ${revision:0:11} already built in $prefix"
     exit 0
 fi
@@ -80,7 +83,10 @@ if [[ ! -x $host_build/bin/llvm-tblgen ]]; then
 fi
 
 # The console's libraries. LLVM's configure checks link with -lm, which the
-# SDK does not have (its libc holds the maths): an empty libm.a stands in
+# SDK does not have (its libc holds the maths): an empty libm.a stands in.
+# No dlopen: the SDK declares it, but a title loads no libraries, and LLVM's
+# DynamicLibrary then crashed in every PPU compile worker (dlerror's null);
+# llvm-patches/0002 gives it the process without one
 flags="-march=znver2 -fno-omit-frame-pointer"
 echo "==> [llvm] configuring for the console"
 mkdir -p "$build/stub-libs"
@@ -98,6 +104,7 @@ cmake -S "$llvm" -B "$build" "${common[@]}" \
     -DLLVM_BUILD_UTILS=OFF -DLLVM_ENABLE_THREADS=ON -DLLVM_ENABLE_BACKTRACES=OFF \
     -DLLVM_ENABLE_CRASH_OVERRIDES=OFF -DLLVM_ENABLE_PLUGINS=OFF \
     -DLLVM_BUILD_LLVM_DYLIB=OFF -DLLVM_ENABLE_PIC=ON \
+    -DHAVE_DLOPEN=OFF -DHAVE_LIBDL=OFF \
     >"$build/configure.log" 2>&1 || {
     grep -n "CMake Error" -A6 "$build/configure.log" >&2
     echo "error: configure failed: $build/configure.log" >&2; exit 1; }
@@ -107,5 +114,5 @@ ninja -C "$build" -k 0 >"$build/build.log" 2>&1 || {
     echo "error: the build failed: $build/build.log ($(grep -c 'error:' "$build/build.log") errors)" >&2; exit 1; }
 ninja -C "$build" install >"$build/install.log" 2>&1 || {
     echo "error: install failed: $build/install.log" >&2; exit 1; }
-echo "$revision" >"$prefix/.revision"
+echo "$stamp" >"$prefix/.revision"
 echo "==> [llvm] ${revision:0:11} built in $prefix"
