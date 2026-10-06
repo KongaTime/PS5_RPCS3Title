@@ -80,3 +80,15 @@ set(PS5_TITLE_LINK_INPUTS --start-group ${rpcs3_archives} ${ffmpeg_archives} ${i
 set(PS5_TITLE_LINK_DEPENDS ${rpcs3_archives})
 list(LENGTH rpcs3_archives rpcs3_archive_count)
 message(STATUS "RPCS3: linking ${rpcs3_archive_count} archives from ${rpcs3_build}")
+
+# The console maps the title's code execute-only and ends a title that reads it
+# (SYSTEM_XO_VIOLATION). RPCS3's fault handler reads the faulting instruction, so
+# the title carries a readable copy of its code segment, rpcs3-code.bin
+# (rpcs3/code-copy.py; PS5_RPCS3's Utilities/Thread.cpp reads it)
+function(ps5_title_post_link)
+	file(READ ${ROOT}/ps5/sce_sys/param.json rpcs3_param)
+	string(JSON rpcs3_title_id GET "${rpcs3_param}" titleId)
+	add_custom_command(TARGET title POST_BUILD
+		COMMAND python3 ${ROOT}/rpcs3/code-copy.py ${CMAKE_BINARY_DIR}/link/llvm-pie.elf ${ROOT}/dist/${rpcs3_title_id}/rpcs3-code.bin
+		VERBATIM)
+endfunction()

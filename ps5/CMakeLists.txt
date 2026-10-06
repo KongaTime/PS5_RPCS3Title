@@ -139,3 +139,9 @@ add_custom_command(
 	COMMAND_EXPAND_LISTS
 	VERBATIM)
 add_custom_target(title ALL DEPENDS ${CMAKE_BINARY_DIR}/eboot.elf)
+
+# PS5_RPCS3Title: what the title's program adds once the title is linked
+# (rpcs3/rpcs3.cmake: the readable copy of the code segment)
+if(COMMAND ps5_title_post_link)
+	ps5_title_post_link()
+endif()
