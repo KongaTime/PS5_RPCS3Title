@@ -1,0 +1,31 @@
+diff --git a/llvm/include/llvm/Support/TrailingObjects.h b/llvm/include/llvm/Support/TrailingObjects.h
+index 218c2e336d..ed8017cd5f 100644
+--- a/llvm/include/llvm/Support/TrailingObjects.h
++++ b/llvm/include/llvm/Support/TrailingObjects.h
+@@ -160,11 +160,26 @@ protected:
+   static constexpr size_t additionalSizeToAllocImpl(
+       size_t SizeSoFar, size_t Count1,
+       typename ExtractSecondType<MoreTys, size_t>::type... MoreCounts) {
++#if defined(__SCE__)
++    // PS5: the PlayStation ABI gives the empty alignas(Align) base below no
++    // alignment and no size, so BaseTy can be less aligned than its trailing
++    // objects (MachineInstr::ExtraInfo: 12 bytes, aligned to 4, before
++    // 8-byte pointers). getTrailingObjects then aligns from the object's own
++    // address, and the padding was never counted here: the last trailing
++    // object overran the allocation into the next one. Room for the worst
++    // case, whatever the object's address
++    return ParentType::additionalSizeToAllocImpl(
++        (requiresRealignment() ? SizeSoFar + alignof(NextTy) - 1
++                               : SizeSoFar) +
++            sizeof(NextTy) * Count1,
++        MoreCounts...);
++#else
+     return ParentType::additionalSizeToAllocImpl(
+         (requiresRealignment() ? llvm::alignTo<alignof(NextTy)>(SizeSoFar)
+                                : SizeSoFar) +
+             sizeof(NextTy) * Count1,
+         MoreCounts...);
++#endif
+   }
+ };
+ 
