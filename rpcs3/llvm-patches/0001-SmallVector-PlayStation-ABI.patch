@@ -1,0 +1,23 @@
+diff --git a/llvm/lib/Support/SmallVector.cpp b/llvm/lib/Support/SmallVector.cpp
+index dceea4fbc6..62806271e2 100644
+--- a/llvm/lib/Support/SmallVector.cpp
++++ b/llvm/lib/Support/SmallVector.cpp
+@@ -40,6 +40,10 @@ struct Struct32B {
+ static_assert(sizeof(SmallVector<void *, 0>) ==
+                   sizeof(unsigned) * 2 + sizeof(void *),
+               "wasted space in SmallVector size 0");
++// PS5: the PlayStation ABI gives an empty base class no alignment of its own,
++// so SmallVectorStorage<T, 0> does not align SmallVector<T, 0>; getFirstEl()'s
++// address is then only compared, never read through, for a size of 0
++#if !defined(__SCE__)
+ static_assert(alignof(SmallVector<Struct16B, 0>) >= alignof(Struct16B),
+               "wrong alignment for 16-byte aligned T");
+ static_assert(alignof(SmallVector<Struct32B, 0>) >= alignof(Struct32B),
+@@ -48,6 +52,7 @@ static_assert(sizeof(SmallVector<Struct16B, 0>) >= alignof(Struct16B),
+               "missing padding for 16-byte aligned T");
+ static_assert(sizeof(SmallVector<Struct32B, 0>) >= alignof(Struct32B),
+               "missing padding for 32-byte aligned T");
++#endif
+ static_assert(sizeof(SmallVector<void *, 1>) ==
+                   sizeof(unsigned) * 2 + sizeof(void *) * 2,
+               "wasted space in SmallVector size 1");

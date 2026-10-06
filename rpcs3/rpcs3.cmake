@@ -29,18 +29,25 @@ list(FILTER rpcs3_archives EXCLUDE REGEX "/libvulkan-placeholder\\.a$|/CMakeFile
 file(GLOB ffmpeg_archives CONFIGURE_DEPENDS ${ROOT}/.deps/native/ffmpeg-ps5/lib/*.a)
 # GNU libiconv (rpcs3/build-libiconv.sh): cellL10n's text encodings
 set(iconv_archive ${ROOT}/.deps/native/libiconv-ps5/lib/libiconv.a)
+# LLVM's libraries for the console (rpcs3/build-llvm.sh): RPCS3's archives name
+# them, and the group resolves their order
+file(GLOB llvm_archives CONFIGURE_DEPENDS ${ROOT}/.deps/native/llvm-ps5/lib/libLLVM*.a)
 
 # libc functions the console lacks, which the platform layer this title pins has
 # as ps5_<name> (ps5platform/libc.h) and PS5_Vulkan's recipe does not bind yet:
 # asmjit's getpagesizes, Abseil's syscall, RPCS3's times and statfs, wolfSSL's
 # accept4, miniupnpc's if_nametoindex, if_indextoname, getnameinfo and
 # gai_strerror, FFmpeg's isatty, libc++'s pathconf (std::filesystem; SDK fork 220b1be),
-# and in6addr_any (RPCS3's networking): the SDK's libSceNet stub defines it, but
+# LLVM's Support library's getpwnam_r, posix_madvise, strsignal and sbrk (SDK fork
+# 1de8b37), and its process and file-system calls, which RPCS3's JIT never makes
+# (fork, setsid, wait4, umask, fstatfs, fchown: refused as a title has none of
+# them), and in6addr_any (RPCS3's networking): the SDK's libSceNet stub defines it, but
 # the module gives a title no such export, and the shell refused to start the
 # title that imported it ("can't start the game or app")
 set(rpcs3_libc_bindings)
 foreach(name getpagesizes syscall times statfs accept4 if_nametoindex if_indextoname
-		getnameinfo gai_strerror isatty pathconf in6addr_any)
+		getnameinfo gai_strerror isatty pathconf getpwnam_r posix_madvise strsignal sbrk
+		fork setsid wait4 umask fstatfs fchown in6addr_any)
 	list(APPEND rpcs3_libc_bindings --defsym=${name}=ps5_${name})
 endforeach()
 
@@ -75,7 +82,7 @@ foreach(flag ${rpcs3_libc_bindings} ${rpcs3_weak_undefined})
 endforeach()
 file(WRITE ${rpcs3_local_map} "{\n    local:\n${rpcs3_local_names}};\n")
 
-set(PS5_TITLE_LINK_INPUTS --start-group ${rpcs3_archives} ${ffmpeg_archives} ${iconv_archive} --end-group
+set(PS5_TITLE_LINK_INPUTS --start-group ${rpcs3_archives} ${ffmpeg_archives} ${iconv_archive} ${llvm_archives} --end-group
 	${rpcs3_libc_bindings} ${rpcs3_weak_undefined} --version-script ${rpcs3_local_map})
 set(PS5_TITLE_LINK_DEPENDS ${rpcs3_archives})
 list(LENGTH rpcs3_archives rpcs3_archive_count)

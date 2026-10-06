@@ -26,6 +26,8 @@ are or will be provided: install the PS3 system software from Sony's own
 | `rpcs3/build-rpcs3.sh` | here | cross-builds the fork into `build/rpcs3/` (clang 19 or later) |
 | `rpcs3/build-ffmpeg.sh` | here | FFmpeg 8.1.1 for the console (RPCS3's video and audio decoding) |
 | `rpcs3/build-libiconv.sh` | here | GNU libiconv 1.18 for the console (`cellL10n`'s text encodings) |
+| `rpcs3/build-llvm.sh` | here | LLVM 22.1 (the commit RPCS3 pins) for the console, X86 only, for the PPU and SPU recompilers; its changes in `rpcs3/llvm-patches/` |
+| `rpcs3/code-copy.py` | here | `rpcs3-code.bin`, a readable copy of the title's code for RPCS3's fault handler (the console maps code execute-only) |
 | `rpcs3/clang-scan-deps-ps5` | here | C++20 module scanning with the console compiler's flags (OpenAL Soft) |
 | `rpcs3/rpcs3.cmake` | here | joins `title_main.cpp` to the title and RPCS3's archives to its link |
 | `rpcs3/title_main.cpp` | here | the program: reads the controllers, starts RPCS3 |
@@ -43,11 +45,11 @@ touch pad's click is SELECT; the PS button stays the console's.
 
 With the stack beside this repository (`ps5/tools/bootstrap.sh`), with
 `../PS5_PayloadSDK` my fork ([KongaTime/PS5_PayloadSDK](https://github.com/KongaTime/PS5_PayloadSDK):
-the SDK pin, `220b1be`, adds `pathconf`), and PS5_RPCS3 cloned as `../PS5_RPCS3` with
-its submodules (LLVM's and OpenCV's are not needed yet):
+the SDK pin, `1de8b37`, adds `pathconf` and `sbrk`), and PS5_RPCS3 cloned as `../PS5_RPCS3` with
+its submodules (OpenCV's is not needed; LLVM's at depth 1 is enough):
 
 ```bash
-rpcs3/build-rpcs3.sh rpcs3_ps5 Fusion     # FFmpeg and libiconv first, then RPCS3
+rpcs3/build-rpcs3.sh rpcs3_ps5 Fusion     # FFmpeg, libiconv and LLVM first (LLVM: hours), then RPCS3
 PS5_CLANG=clang-20 ps5/tools/build.sh     # the title, linked with RPCS3, in dist/PPSA99200/
 ```
 
@@ -62,7 +64,7 @@ compiles with (the newest `llvm-config` it finds), or the link stops on a missin
 The PS3 system software first: put Sony's `PS3UPDAT.PUP` (the PS3 update from
 PlayStation's own site) in the title's folder, `/data/homebrew/PPSA99200/`, and launch:
 RPCS3 installs it into `rpcs3/dev_flash/`, once. Then, with nothing named to boot,
-a launch boots the PS3's home menu, on the interpreters (no LLVM yet).
+a launch boots the PS3's home menu.
 
 `/app0/rpcs3-boot.txt` (the title's folder on the console) names what to boot, on its
 first line: an ELF, or a game's folder. Without it RPCS3 starts, reports in klog whether
@@ -70,8 +72,8 @@ the PS3 system software is installed, and stops.
 
 ## Not done
 
-- LLVM: the PPU and SPU recompilers are off, so games run on the interpreters, far too
-  slow to play.
+- LLVM: built in and chosen by default, but not yet run on the console;
+  `/app0/rpcs3-interpreter.txt` (any content) goes back to the interpreters.
 - Sound (the null backend), firmware and package installation, a game list.
 - The console's 16 KiB pages against RPCS3's 4 KiB memory protection, and its
   thread-local storage (emulated on the console: every access is a call).

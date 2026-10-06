@@ -17,10 +17,11 @@ root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cache="$root/.deps/native"
 sdk="$cache/ps5-payload-sdk"
 sdk_fork="${PS5_PAYLOAD_SDK_FORK:-$root/../PS5_PayloadSDK}"
-# 220b1be (PS5_RPCS3Title: my fork, KongaTime/PS5_PayloadSDK, beside this repository):
-# the platform layer's pathconf, which libc++'s std::filesystem reaches in RPCS3.
+# 1de8b37 (PS5_RPCS3Title: my fork, KongaTime/PS5_PayloadSDK, beside this repository):
+# the platform layer's pathconf (220b1be), which libc++'s std::filesystem reaches
+# in RPCS3, and sbrk, which LLVM's Support library reaches.
 # Never older than fa69d00, the platform layer's localeconv in the C locale (ps5_localeconv).
-sdk_revision=220b1be9250d4b1b734dddeb7c2ead7d243834c6
+sdk_revision=1de8b37d583de476ad07cde9a0d562b75fb1be8f
 
 if [[ ! -f $sdk/.ps5-sdk-revision || $(<"$sdk/.ps5-sdk-revision") != "$sdk_revision" ]]; then
     git -C "$sdk_fork" cat-file -e "$sdk_revision^{commit}" 2>/dev/null || {
