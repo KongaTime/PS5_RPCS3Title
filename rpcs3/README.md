@@ -72,8 +72,14 @@ the PS3 system software is installed, and stops.
 
 ## Not done
 
-- LLVM: built in and chosen by default, but not yet run on the console;
-  `/app0/rpcs3-interpreter.txt` (any content) goes back to the interpreters.
+- LLVM's first compile is slow, and compiling as code first runs leaves the
+  screen still: on my console (PS5_RPCS3 5864031, both recompilers, one compile
+  thread) the PS3 home menu drew from 40 s, stood still from 100 s to 270 s while
+  24 modules compiled, then ran at 60 fps (3597 RSX flips a minute) for the 40
+  minutes it was left. `/app0/rpcs3-interpreter.txt` goes back to the
+  interpreters (`ppu` or `spu` alone for one), `/app0/rpcs3-llvm-threads.txt`
+  bounds the compile threads, `/app0/rpcs3-llvm-logs.txt` keeps each PPU
+  module's IR beside it.
 - Sound (the null backend), firmware and package installation, a game list.
 - The console's 16 KiB pages against RPCS3's 4 KiB memory protection, and its
   thread-local storage (emulated on the console: every access is a call).
