@@ -85,8 +85,13 @@ foreach(flag ${rpcs3_libc_bindings} ${rpcs3_weak_undefined})
 endforeach()
 file(WRITE ${rpcs3_local_map} "{\n    local:\n${rpcs3_local_names}};\n")
 
+# Every open by path the program makes, recorded by name (PS5_RPCS3's
+# rpcs3/ps5/ps5_fdtrack.cpp): a title holds about 249 files at once, and GTA
+# IV's boot ran out of them with most opened outside RPCS3's own fs
+set(rpcs3_file_wraps --wrap=open --wrap=openat --wrap=fopen)
+
 set(PS5_TITLE_LINK_INPUTS --start-group ${rpcs3_archives} ${ffmpeg_archives} ${iconv_archive} ${llvm_archives} --end-group
-	${rpcs3_libc_bindings} ${rpcs3_weak_undefined} --version-script ${rpcs3_local_map})
+	${rpcs3_libc_bindings} ${rpcs3_weak_undefined} ${rpcs3_file_wraps} --version-script ${rpcs3_local_map})
 set(PS5_TITLE_LINK_DEPENDS ${rpcs3_archives})
 list(LENGTH rpcs3_archives rpcs3_archive_count)
 message(STATUS "RPCS3: linking ${rpcs3_archive_count} archives from ${rpcs3_build}")
