@@ -96,9 +96,23 @@ message(STATUS "RPCS3: linking ${rpcs3_archive_count} archives from ${rpcs3_buil
 # the title carries a readable copy of its code segment, rpcs3-code.bin
 # (rpcs3/code-copy.py; PS5_RPCS3's Utilities/Thread.cpp reads it)
 function(ps5_title_post_link)
+	# PS5_RPCS3's checkout, found as rpcs3/build-rpcs3.sh finds it
+	set(rpcs3_src "$ENV{RPCS3_SRC}")
+	if(NOT rpcs3_src)
+		foreach(candidate ${ROOT}/../PS5_RPCS3 ${ROOT}/../ps5_rpcs3)
+			if(EXISTS ${candidate}/rpcs3/CMakeLists.txt)
+				set(rpcs3_src ${candidate})
+				break()
+			endif()
+		endforeach()
+	endif()
 	file(READ ${ROOT}/ps5/sce_sys/param.json rpcs3_param)
 	string(JSON rpcs3_title_id GET "${rpcs3_param}" titleId)
+	# And RPCS3's overlay images (bin/Icons/ui: the pad's buttons, the save
+	# list's "new" entry, the spinner), which its native dialogs load from
+	# /app0/rpcs3/Icons/ui/; RPCS3's own, under its licence
 	add_custom_command(TARGET title POST_BUILD
 		COMMAND python3 ${ROOT}/rpcs3/code-copy.py ${CMAKE_BINARY_DIR}/link/llvm-pie.elf ${ROOT}/dist/${rpcs3_title_id}/rpcs3-code.bin
+		COMMAND ${CMAKE_COMMAND} -E copy_directory ${rpcs3_src}/bin/Icons/ui ${ROOT}/dist/${rpcs3_title_id}/rpcs3/Icons/ui
 		VERBATIM)
 endfunction()
