@@ -74,8 +74,9 @@ Measured on my console (PS5_RPCS3 0cc0383, both recompilers): the Ratchet & Clan
 Collection (BCUS98282, a disc folder) booted, ran its menu and its video at full
 speed, and started Ratchet & Clank 1 through exitspawn; the game ran at 60 fps,
 New Game, saving from the pause menu and loading from the main menu worked
-through RPCS3's native save data list. Each game's first boot compiles for
-several minutes with the screen still.
+through RPCS3's native save data list. With PS5_RPCS3 607da38 it had sound,
+through the console's own output (libSceAudioOut). Each game's first boot
+compiles for several minutes with the screen still.
 
 ## Not done
 
@@ -87,6 +88,6 @@ several minutes with the screen still.
   interpreters (`ppu` or `spu` alone for one), `/app0/rpcs3-llvm-threads.txt`
   bounds the compile threads, `/app0/rpcs3-llvm-logs.txt` keeps each PPU
   module's IR beside it.
-- Sound (the null backend), installing PSN packages, a game list.
+- Installing PSN packages, a game list.
 - The console's 16 KiB pages against RPCS3's 4 KiB memory protection, and its
   thread-local storage (emulated on the console: every access is a call).
