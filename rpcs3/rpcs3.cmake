@@ -43,11 +43,14 @@ file(GLOB llvm_archives CONFIGURE_DEPENDS ${ROOT}/.deps/native/llvm-ps5/lib/libL
 # (fork, setsid, wait4, umask, fstatfs, fchown: refused as a title has none of
 # them), and in6addr_any (RPCS3's networking): the SDK's libSceNet stub defines it, but
 # the module gives a title no such export, and the shell refused to start the
-# title that imported it ("can't start the game or app")
+# title that imported it ("can't start the game or app"); and realpath, which
+# libc++'s std::filesystem canonical paths are built on: the console refuses it
+# to a title (EPERM), and the package installer could not resolve its
+# installation directory (the Ratchet & Clank Collection disc's PKGDIR)
 set(rpcs3_libc_bindings)
 foreach(name getpagesizes syscall times statfs accept4 if_nametoindex if_indextoname
 		getnameinfo gai_strerror isatty pathconf getpwnam_r posix_madvise strsignal sbrk
-		fork setsid wait4 umask fstatfs fchown in6addr_any)
+		fork setsid wait4 umask fstatfs fchown in6addr_any realpath)
 	list(APPEND rpcs3_libc_bindings --defsym=${name}=ps5_${name})
 endforeach()
 
