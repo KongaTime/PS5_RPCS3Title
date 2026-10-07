@@ -67,8 +67,15 @@ RPCS3 installs it into `rpcs3/dev_flash/`, once. Then, with nothing named to boo
 a launch boots the PS3's home menu.
 
 `/app0/rpcs3-boot.txt` (the title's folder on the console) names what to boot, on its
-first line: an ELF, or a game's folder. Without it RPCS3 starts, reports in klog whether
-the PS3 system software is installed, and stops.
+first line: an ELF, or a game's folder (booted through its `EBOOT.BIN`; a disc's
+`PKGDIR` packages install at its first boot). Without it the PS3 home menu boots.
+
+Measured on my console (PS5_RPCS3 0cc0383, both recompilers): the Ratchet & Clank
+Collection (BCUS98282, a disc folder) booted, ran its menu and its video at full
+speed, and started Ratchet & Clank 1 through exitspawn; the game ran at 60 fps,
+New Game, saving from the pause menu and loading from the main menu worked
+through RPCS3's native save data list. Each game's first boot compiles for
+several minutes with the screen still.
 
 ## Not done
 
@@ -80,6 +87,6 @@ the PS3 system software is installed, and stops.
   interpreters (`ppu` or `spu` alone for one), `/app0/rpcs3-llvm-threads.txt`
   bounds the compile threads, `/app0/rpcs3-llvm-logs.txt` keeps each PPU
   module's IR beside it.
-- Sound (the null backend), firmware and package installation, a game list.
+- Sound (the null backend), installing PSN packages, a game list.
 - The console's 16 KiB pages against RPCS3's 4 KiB memory protection, and its
   thread-local storage (emulated on the console: every access is a call).
