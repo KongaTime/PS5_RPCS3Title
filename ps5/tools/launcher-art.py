@@ -4,9 +4,12 @@
 - fonts/Inter-<weight>.ttf: static instances of Inter (SIL OFL 1.1, no reserved
   name) cut from its variable font at Google Fonts' pinned commit, subset to Latin;
   RPCS3's overlays draw with stb_truetype, which reads only a font's default instance.
-- launcher/rpcs3-logo.png: a cube and the word RPCS3, drawn at three times the
+- launcher/rpcs3-logo.png: the mark and the word RPCS3, drawn at three times the
   overlays' 1280x720 space (the console's 3840x2160). The letters are drawn with
   Orbitron Medium (OFL 1.1); the font itself is not shipped.
+- launcher/mark.png: the mark alone and large, for the intro's white screen. The
+  mark is kongatime's crowned 3 (ps5/art/icon-source.webp, the title's icon) as
+  a rounded tile.
 
 Needs fontTools and Pillow. Run once; commit what it writes.
 """
@@ -76,43 +79,34 @@ def write_fonts(inter):
     (ROOT / "ps5" / "licenses" / "OFL-1.1-Inter.txt").write_bytes(fetch("inter-ofl"))
 
 
-def draw_cube(size):
-    """An isometric cube's outline with two lit faces, as the design's mark."""
+def draw_mark(size):
+    """kongatime's crowned 3 (the title's icon) as a rounded tile, with a faint rim."""
     ss = 4  # supersampled, then reduced
     n = size * ss
-    image = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    d = ImageDraw.Draw(image)
-    cx, cy = n / 2, n / 2
-    r = n * 0.46
-    hexagon = [(cx + r * math.cos(math.radians(a)), cy + r * math.sin(math.radians(a))) for a in (-90, -30, 30, 90, 150, 210)]
-    top, upper_right, lower_right, bottom, lower_left, upper_left = hexagon
-    centre = (cx, cy)
+    art = Image.open(ROOT / "ps5" / "art" / "icon-source.webp").convert("RGBA").resize((n, n), Image.LANCZOS)
+    radius = n * 0.22
+    mask = Image.new("L", (n, n), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, n - 1, n - 1], radius=radius, fill=255)
+    tile = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    tile.paste(art, (0, 0), mask)
+    rim = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    w = max(2, round(n * 0.018))
+    ImageDraw.Draw(rim).rounded_rectangle([w / 2, w / 2, n - 1 - w / 2, n - 1 - w / 2], radius=radius - w / 2,
+                                          outline=(255, 255, 255, 56), width=w)
+    tile.alpha_composite(rim)
+    return tile.resize((size, size), Image.LANCZOS)
 
-    cyan = (88, 220, 236, 255)
-    cyan_dim = (52, 150, 168, 255)
-    dark = (12, 18, 32, 255)
 
-    # Faces: top lit, right lit, left in shade
-    d.polygon([top, upper_right, centre, upper_left], fill=cyan)
-    d.polygon([centre, upper_right, lower_right, bottom], fill=cyan_dim)
-    d.polygon([centre, bottom, lower_left, upper_left], fill=dark)
-
-    # A notch cut into the lit faces, the mark's "P"-like step
-    def lerp(a, b, t):
-        return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
-    notch = [lerp(centre, upper_left, 0.0), lerp(centre, upper_right, 0.55), lerp(lerp(centre, upper_right, 0.55), lerp(bottom, lower_right, 0.55), 0.5), lerp(centre, bottom, 0.5)]
-    d.polygon(notch, fill=dark)
-
-    # The outline and the three inner edges, in white
-    w = max(2, int(n * 0.055))
-    d.line(hexagon + [top], fill=(255, 255, 255, 255), width=w, joint="curve")
-    for corner in (upper_left, upper_right, bottom):
-        d.line([centre, corner], fill=(255, 255, 255, 255), width=w)
-    return image.resize((size, size), Image.LANCZOS)
+def write_mark():
+    """The mark alone, 150 virtual pixels square, for the intro's white screen."""
+    image = draw_mark(150 * SCALE)
+    target = ASSETS / "launcher" / "mark.png"
+    image.save(target, optimize=True)
+    print(f"wrote {target.relative_to(ROOT)} ({image.width}x{image.height})")
 
 
 def write_logo(orbitron):
-    # Virtual layout: a 28-pixel cube, a 10-pixel gap, letters 12 pixels high
+    # Virtual layout: a 28-pixel mark, a 10-pixel gap, letters 12 pixels high
     cube = 28 * SCALE
     gap = 10 * SCALE
     cap = 12 * SCALE
@@ -130,7 +124,7 @@ def write_logo(orbitron):
     text_w = math.ceil(sum(widths) + tracking * (len(text) - 1))
     width = cube + gap + text_w + SCALE
     image = Image.new("RGBA", (width, cube), (0, 0, 0, 0))
-    image.alpha_composite(draw_cube(cube), (0, 0))
+    image.alpha_composite(draw_mark(cube), (0, 0))
 
     d = ImageDraw.Draw(image)
     x = cube + gap
@@ -168,9 +162,11 @@ def write_trash():
 
 
 def main():
-    write_fonts(fetch("inter"))
+    if "--logo-only" not in sys.argv:
+        write_fonts(fetch("inter"))
+        write_trash()
     write_logo(fetch("orbitron"))
-    write_trash()
+    write_mark()
 
 
 if __name__ == "__main__":
